@@ -9,29 +9,32 @@ import java.util.List;
 
 @Service
 public class LoginService {
-    private List<Utilisateur> utilisateurs;
-    private String LOGIN = "admin";
-    private String PASSWORD = "admin123";
 
-    // Annotation @Autowired -> car nous utilisons un service externe
+    @Autowired
+    private UtilisateurService utilisateurService;
+
     @Autowired
     private HttpSession httpSession;
 
     public boolean login(String username, String password){
-        for(Utilisateur u : utilisateurs){
-            if(u.getName().equals(username) && u.getPassword().equals(password)){
-                httpSession.setAttribute("login", "OK");
-                return true;
-            }
-        } return  false;
+        return utilisateurService.findByName(username)
+                .map(utilisateur -> {
+                    if(utilisateur.getPassword().equals(password)){ // Vous devriez hacher et comparer les mots de passe
+                        httpSession.setAttribute("login", "OK");
+                        httpSession.setAttribute("user", utilisateur);
+                        return true;
+                    }
+                    return false;
+                })
+                .orElse(false);
     }
 
     public boolean isLogged(){
-        try {
-            String userIsLogged = httpSession.getAttribute("login").toString();
-            return userIsLogged.equals("OK");
-        } catch (Exception e){
-            return false;
-        }
+        String userIsLogged = (String) httpSession.getAttribute("login");
+        return "OK".equals(userIsLogged);
+    }
+
+    public void logout() {
+        httpSession.invalidate();
     }
 }
